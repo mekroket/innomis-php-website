@@ -1,6 +1,6 @@
 # Innomis - Inovasyon ve Yönetim Bilişim Sistemleri Topluluğu Web Sitesi
 
-![Innomis Logo](link_to_logo_if_any)
+
 
 ## Hakkında
 
