@@ -77,5 +77,5 @@ Bu proje **MIT Lisansı** ile lisanslanmıştır. Daha fazla bilgi için `LICENS
 
 ## İletişim
 - **Topluluk:** Innomis - İnovasyon ve Yönetim Bilişim Sistemleri
-- **Geliştirici:** [GitHub Profiliniz]
+- **Geliştirici:** [https://github.com/mekroket]
 
