@@ -1,12 +1,14 @@
 # Innomis - Inovasyon ve Yönetim Bilişim Sistemleri Topluluğu Web Sitesi
 
-
+## SİTE ŞUAN YAYINDA!
+[www.innomis.tr](https://innomis.tr/)
 
 
 
 ## Hakkında
 
 Bu proje, **İnovasyon ve Yönetim Bilişim Sistemleri Topluluğu** için geliştirilmiş bir web sitesidir. Topluluk hakkında bilgilendirici içerikler sunmanın yanı sıra etkinlik takibi, üye kaydı, galeri yönetimi ve iletişim gibi işlevleri barındırmaktadır.
+
 
 ## Kullanılan Teknolojiler
 
