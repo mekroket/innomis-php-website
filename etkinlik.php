@@ -39,12 +39,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["image"])) {
     if (in_array($_FILES['image']['type'], $allowed_types)) { // Burada fazladan parantez kaldırıldı
         if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
             // Veritabanına kaydetme
-            $sql = "INSERT INTO events (title, date, location, image) VALUES ('$title', '$date', '$location', '$target_file')";
-            if ($conn->query($sql) === TRUE) {
+            $sql = "INSERT INTO events (title, date, location, image) VALUES (?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssss", $title, $date, $location, $target_file);
+            if ($stmt->execute()) {
                 echo "<div class='alert alert-success'>Yeni etkinlik başarıyla eklendi!</div>";
             } else {
-                echo "<div class='alert alert-danger'>Hata: " . $sql . "<br>" . $conn->error . "</div>";
+                echo "<div class='alert alert-danger'>Hata: " . $stmt->error . "</div>";
             }
+            $stmt->close();
         } else {
             echo "<div class='alert alert-danger'>Dosya yüklenemedi.</div>";
         }
@@ -55,13 +58,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["image"])) {
 
 // Etkinlik silme işlemi
 if (isset($_GET['delete_id'])) {
-    $delete_id = $_GET['delete_id'];
-    $delete_sql = "DELETE FROM events WHERE id = $delete_id";
-    if ($conn->query($delete_sql)) {
+    $delete_id = intval($_GET['delete_id']);
+    $delete_sql = "DELETE FROM events WHERE id = ?";
+    $stmt = $conn->prepare($delete_sql);
+    $stmt->bind_param("i", $delete_id);
+    if ($stmt->execute()) {
         echo "<div class='alert alert-success'>Etkinlik başarıyla silindi.</div>";
     } else {
-        echo "<div class='alert alert-danger'>Hata: " . $conn->error . "</div>";
+        echo "<div class='alert alert-danger'>Hata: " . $stmt->error . "</div>";
     }
+    $stmt->close();
 }
 
 // Etkinlikleri getir

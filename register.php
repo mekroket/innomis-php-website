@@ -180,13 +180,17 @@ $result = $conn->query($sql);
         $email = $_POST['email'];
 
         $sql = "INSERT INTO registrations (fullName, faculty, class, studentNumber, department, address, contactNumber, email)
-            VALUES ('$fullName', '$faculty', '$class', '$studentNumber', '$department', '$address', '$contactNumber', '$email')";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssssssss", $fullName, $faculty, $class, $studentNumber, $department, $address, $contactNumber, $email);
 
-        if ($conn->query($sql) === TRUE) {
+        if ($stmt->execute()) {
             $successMessage = "Kayıt başarılı!"; // Set success message if registration is successful
         } else {
-            echo "Error: " . $sql . "<br>" . $conn->error;
+            echo "Error: " . $stmt->error;
         }
+        $stmt->close();
     }
 
     $conn->close();
