@@ -84,40 +84,46 @@ if (isset($_GET['delete_id'])) {
 
 // Fotoğraf yükleme işlemi
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['image'])) {
-    $category = $_POST['category'];
+    $category = trim($_POST['category']);
     $image_name = $_FILES['image']['name'];
     $image_tmp = $_FILES['image']['tmp_name'];
     $target_dir = "assets/img/gallery/";
-
-    if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
-
-    // Dosya uzantısını kontrol et
-    $file_extension = strtolower(pathinfo($image_name, PATHINFO_EXTENSION));
-    $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
-    $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
     
-    if (in_array($file_extension, $allowed_extensions) && in_array($_FILES['image']['type'], $allowed_types)) {
-        // Güvenli dosya adı oluştur
-        $safe_filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($image_name));
-        $target_file = $target_dir . $safe_filename;
-        
-        if (move_uploaded_file($image_tmp, $target_file)) {
-            $stmt = $conn->prepare("INSERT INTO gallery (image_name, category) VALUES (?, ?)");
-            $stmt->bind_param("ss", $safe_filename, $category);
-
-            if ($stmt->execute()) {
-                echo "Fotoğraf başarıyla eklendi.";
-            } else {
-                echo "Veritabanına kaydederken hata oluştu.";
-            }
-            $stmt->close();
-        } else {
-            echo "Dosya yüklenemedi.";
-        }
+    // Validate category
+    if (empty($category) || strlen($category) > 50) {
+        echo "Geçersiz kategori.";
     } else {
-        echo "Sadece resim dosyaları kabul edilir.";
+        if (!file_exists($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+
+        // Dosya uzantısını kontrol et
+        $file_extension = strtolower(pathinfo($image_name, PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        
+        if (in_array($file_extension, $allowed_extensions) && in_array($_FILES['image']['type'], $allowed_types)) {
+            // Güvenli dosya adı oluştur
+            $safe_filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($image_name));
+            $target_file = $target_dir . $safe_filename;
+            
+            if (move_uploaded_file($image_tmp, $target_file)) {
+                $stmt = $conn->prepare("INSERT INTO gallery (image_name, category) VALUES (?, ?)");
+                $stmt->bind_param("ss", $safe_filename, $category);
+
+                if ($stmt->execute()) {
+                    echo "Fotoğraf başarıyla eklendi.";
+                } else {
+                    echo "Veritabanına kaydederken hata oluştu.";
+                }
+                $stmt->close();
+            } else {
+                echo "Dosya yüklenemedi.";
+            }
+        } else {
+            echo "Sadece resim dosyaları kabul edilir.";
+        }
+    }
     }
 }
 

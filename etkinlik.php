@@ -22,42 +22,53 @@ if ($conn->connect_error) {
 
 // Etkinlik ekleme işlemi
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["image"])) {
-    $title = $_POST['title'];
-    $date = $_POST['date'];
-    $location = $_POST['location'];
+    // Input validation
+    $title = trim($_POST['title']);
+    $date = trim($_POST['date']);
+    $location = trim($_POST['location']);
     
-    // Resim dosyasının yüklenmesi
-    $target_dir = "assets/img/gallery/";
-    if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
-    
-    // Dosya uzantısını kontrol et
-    $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
-    $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
-    $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-    
-    if (in_array($file_extension, $allowed_extensions) && in_array($_FILES['image']['type'], $allowed_types)) {
-        // Güvenli dosya adı oluştur
-        $safe_filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($_FILES["image"]["name"]));
-        $target_file = $target_dir . $safe_filename;
-        
-        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-            // Veritabanına kaydetme
-            $sql = "INSERT INTO events (title, date, location, image) VALUES (?, ?, ?, ?)";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssss", $title, $date, $location, $target_file);
-            if ($stmt->execute()) {
-                echo "<div class='alert alert-success'>Yeni etkinlik başarıyla eklendi!</div>";
-            } else {
-                echo "<div class='alert alert-danger'>Hata: " . $stmt->error . "</div>";
-            }
-            $stmt->close();
-        } else {
-            echo "<div class='alert alert-danger'>Dosya yüklenemedi.</div>";
-        }
+    // Validate inputs
+    if (empty($title) || empty($date) || empty($location)) {
+        echo "<div class='alert alert-danger'>Tüm alanları doldurunuz.</div>";
+    } elseif (strlen($title) > 200 || strlen($location) > 200) {
+        echo "<div class='alert alert-danger'>Başlık veya konum çok uzun.</div>";
+    } elseif (!strtotime($date)) {
+        echo "<div class='alert alert-danger'>Geçersiz tarih formatı.</div>";
     } else {
-        echo "<div class='alert alert-danger'>Sadece resim dosyaları kabul edilir.</div>";
+        // Resim dosyasının yüklenmesi
+        $target_dir = "assets/img/gallery/";
+        if (!file_exists($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+        
+        // Dosya uzantısını kontrol et
+        $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        
+        if (in_array($file_extension, $allowed_extensions) && in_array($_FILES['image']['type'], $allowed_types)) {
+            // Güvenli dosya adı oluştur
+            $safe_filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($_FILES["image"]["name"]));
+            $target_file = $target_dir . $safe_filename;
+            
+            if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+                // Veritabanına kaydetme
+                $sql = "INSERT INTO events (title, date, location, image) VALUES (?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("ssss", $title, $date, $location, $target_file);
+                if ($stmt->execute()) {
+                    echo "<div class='alert alert-success'>Yeni etkinlik başarıyla eklendi!</div>";
+                } else {
+                    echo "<div class='alert alert-danger'>Hata: " . $stmt->error . "</div>";
+                }
+                $stmt->close();
+            } else {
+                echo "<div class='alert alert-danger'>Dosya yüklenemedi.</div>";
+            }
+        } else {
+            echo "<div class='alert alert-danger'>Sadece resim dosyaları kabul edilir.</div>";
+        }
+    }
     }
 }
 
