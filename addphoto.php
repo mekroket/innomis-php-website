@@ -20,27 +20,40 @@ if ($conn->connect_error) {
 
 // Fotoğraf silme işlemi
 if (isset($_GET['delete_image_id'])) {
-    $delete_image_id = $_GET['delete_image_id'];
+    $delete_image_id = intval($_GET['delete_image_id']);
     $delete_sql = "SELECT image_name FROM gallery WHERE id = ?";
     $stmt = $conn->prepare($delete_sql);
     $stmt->bind_param("i", $delete_image_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $image = $result->fetch_assoc();
-    $image_path = "assets/img/gallery/" . $image['image_name'];
-
-    // Fotoğrafı sil
-    if (unlink($image_path)) {
-        $delete_sql = "DELETE FROM gallery WHERE id = ?";
-        $stmt = $conn->prepare($delete_sql);
-        $stmt->bind_param("i", $delete_image_id);
-        if ($stmt->execute()) {
-            echo "Fotoğraf başarıyla silindi.";
+    
+    if ($image) {
+        // Güvenlik kontrolü: Sadece dosya adını al, path traversal'ı önle
+        $safe_filename = basename($image['image_name']);
+        $image_path = "assets/img/gallery/" . $safe_filename;
+        
+        // Dosyanın hedef dizinde olduğunu doğrula
+        $real_path = realpath($image_path);
+        $base_path = realpath("assets/img/gallery/");
+        
+        if ($real_path && $base_path && strpos($real_path, $base_path) === 0) {
+            // Fotoğrafı sil
+            if (unlink($image_path)) {
+                $delete_sql = "DELETE FROM gallery WHERE id = ?";
+                $stmt = $conn->prepare($delete_sql);
+                $stmt->bind_param("i", $delete_image_id);
+                if ($stmt->execute()) {
+                    echo "Fotoğraf başarıyla silindi.";
+                } else {
+                    echo "Fotoğraf silinemedi.";
+                }
+            } else {
+                echo "Dosya silinemedi.";
+            }
         } else {
-            echo "Fotoğraf silinemedi.";
+            echo "Geçersiz dosya yolu.";
         }
-    } else {
-        echo "Dosya silinemedi.";
     }
     $stmt->close();
 }
