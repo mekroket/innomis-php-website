@@ -367,13 +367,13 @@ $conn->close();
                     <?php if ($gallery_result->num_rows > 0): ?>
                         <?php while ($row = $gallery_result->fetch_assoc()): ?>
                             <div class="gallery-item">
-                                <img src="assets/img/gallery/<?php echo $row['image_name']; ?>" 
+                                <img src="assets/img/gallery/<?php echo htmlspecialchars($row['image_name'], ENT_QUOTES, 'UTF-8'); ?>" 
                                      class="gallery-image" alt="Fotoğraf">
                                 <div class="gallery-info">
                                     <div class="gallery-category">
-                                        <i class="fas fa-folder me-2"></i><?php echo $row['category']; ?>
+                                        <i class="fas fa-folder me-2"></i><?php echo htmlspecialchars($row['category'], ENT_QUOTES, 'UTF-8'); ?>
                                     </div>
-                                    <a href="?delete_image_id=<?php echo $row['id']; ?>" 
+                                    <a href="?delete_image_id=<?php echo intval($row['id']); ?>" 
                                        class="btn-delete"
                                        onclick="return confirm('Bu fotoğrafı silmek istediğinize emin misiniz?')">
                                         <i class="fas fa-trash me-2"></i>Sil
