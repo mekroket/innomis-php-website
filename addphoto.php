@@ -60,12 +60,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['image'])) {
         mkdir($target_dir, 0777, true);
     }
 
-    $target_file = $target_dir . basename($image_name);
+    // Dosya uzantısını kontrol et
+    $file_extension = strtolower(pathinfo($image_name, PATHINFO_EXTENSION));
+    $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
     $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-    if (in_array($_FILES['image']['type'], $allowed_types)) {
+    
+    if (in_array($file_extension, $allowed_extensions) && in_array($_FILES['image']['type'], $allowed_types)) {
+        // Güvenli dosya adı oluştur
+        $safe_filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($image_name));
+        $target_file = $target_dir . $safe_filename;
+        
         if (move_uploaded_file($image_tmp, $target_file)) {
             $stmt = $conn->prepare("INSERT INTO gallery (image_name, category) VALUES (?, ?)");
-            $stmt->bind_param("ss", $image_name, $category);
+            $stmt->bind_param("ss", $safe_filename, $category);
 
             if ($stmt->execute()) {
                 echo "Fotoğraf başarıyla eklendi.";
