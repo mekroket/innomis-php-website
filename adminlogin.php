@@ -39,6 +39,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
         if (password_verify($password, $user['password'])) {
+            // Session fixation saldırılarını önlemek için session ID'yi yenile
+            session_regenerate_id(true);
+            
             $_SESSION['admin'] = true;
             $_SESSION['admin_id'] = $user['id'];
             $_SESSION['admin_name'] = $user['name'];

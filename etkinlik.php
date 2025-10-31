@@ -22,46 +22,68 @@ if ($conn->connect_error) {
 
 // Etkinlik ekleme işlemi
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["image"])) {
-    $title = $_POST['title'];
-    $date = $_POST['date'];
-    $location = $_POST['location'];
+    // Input validation
+    $title = trim($_POST['title']);
+    $date = trim($_POST['date']);
+    $location = trim($_POST['location']);
     
-    // Resim dosyasının yüklenmesi
-    $target_dir = "assets/img/gallery/";
-    if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
-    
-    $target_file = $target_dir . basename($_FILES["image"]["name"]);
-    
-    // Dosya tipi kontrolü
-    $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-    if (in_array($_FILES['image']['type'], $allowed_types)) { // Burada fazladan parantez kaldırıldı
-        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-            // Veritabanına kaydetme
-            $sql = "INSERT INTO events (title, date, location, image) VALUES ('$title', '$date', '$location', '$target_file')";
-            if ($conn->query($sql) === TRUE) {
-                echo "<div class='alert alert-success'>Yeni etkinlik başarıyla eklendi!</div>";
+    // Validate inputs
+    if (empty($title) || empty($date) || empty($location)) {
+        echo "<div class='alert alert-danger'>Tüm alanları doldurunuz.</div>";
+    } elseif (strlen($title) > 200 || strlen($location) > 200) {
+        echo "<div class='alert alert-danger'>Başlık veya konum çok uzun.</div>";
+    } elseif (!strtotime($date)) {
+        echo "<div class='alert alert-danger'>Geçersiz tarih formatı.</div>";
+    } else {
+        // Resim dosyasının yüklenmesi
+        $target_dir = "assets/img/gallery/";
+        if (!file_exists($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+        
+        // Dosya uzantısını kontrol et
+        $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        
+        if (in_array($file_extension, $allowed_extensions) && in_array($_FILES['image']['type'], $allowed_types)) {
+            // Güvenli dosya adı oluştur
+            $safe_filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($_FILES["image"]["name"]));
+            $target_file = $target_dir . $safe_filename;
+            
+            if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+                // Veritabanına kaydetme
+                $sql = "INSERT INTO events (title, date, location, image) VALUES (?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("ssss", $title, $date, $location, $target_file);
+                if ($stmt->execute()) {
+                    echo "<div class='alert alert-success'>Yeni etkinlik başarıyla eklendi!</div>";
+                } else {
+                    echo "<div class='alert alert-danger'>Hata: " . $stmt->error . "</div>";
+                }
+                $stmt->close();
             } else {
-                echo "<div class='alert alert-danger'>Hata: " . $sql . "<br>" . $conn->error . "</div>";
+                echo "<div class='alert alert-danger'>Dosya yüklenemedi.</div>";
             }
         } else {
-            echo "<div class='alert alert-danger'>Dosya yüklenemedi.</div>";
+            echo "<div class='alert alert-danger'>Sadece resim dosyaları kabul edilir.</div>";
         }
-    } else {
-        echo "<div class='alert alert-danger'>Sadece resim dosyaları kabul edilir.</div>";
+    }
     }
 }
 
 // Etkinlik silme işlemi
 if (isset($_GET['delete_id'])) {
-    $delete_id = $_GET['delete_id'];
-    $delete_sql = "DELETE FROM events WHERE id = $delete_id";
-    if ($conn->query($delete_sql)) {
+    $delete_id = intval($_GET['delete_id']);
+    $delete_sql = "DELETE FROM events WHERE id = ?";
+    $stmt = $conn->prepare($delete_sql);
+    $stmt->bind_param("i", $delete_id);
+    if ($stmt->execute()) {
         echo "<div class='alert alert-success'>Etkinlik başarıyla silindi.</div>";
     } else {
-        echo "<div class='alert alert-danger'>Hata: " . $conn->error . "</div>";
+        echo "<div class='alert alert-danger'>Hata: " . $stmt->error . "</div>";
     }
+    $stmt->close();
 }
 
 // Etkinlikleri getir
@@ -70,7 +92,7 @@ $events_result = $conn->query($events_sql);
 
 // Etkinlik düzenleme işlemi
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_event'])) {
-    $id = $_POST['event_id'];
+    $id = intval($_POST['event_id']);
     $title = $_POST['edit_title'];
     $date = $_POST['edit_date'];
     $location = $_POST['edit_location'];
@@ -78,10 +100,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_event'])) {
     // Yeni resim yüklendi mi kontrol et
     if (isset($_FILES['edit_image']) && $_FILES['edit_image']['size'] > 0) {
         $target_dir = "assets/img/gallery/";
-        $target_file = $target_dir . basename($_FILES["edit_image"]["name"]);
         
+        // Dosya uzantısını kontrol et
+        $file_extension = strtolower(pathinfo($_FILES["edit_image"]["name"], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
         $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-        if (in_array($_FILES['edit_image']['type'], $allowed_types)) {
+        
+        if (in_array($file_extension, $allowed_extensions) && in_array($_FILES['edit_image']['type'], $allowed_types)) {
+            // Güvenli dosya adı oluştur
+            $safe_filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($_FILES["edit_image"]["name"]));
+            $target_file = $target_dir . $safe_filename;
+            
             if (move_uploaded_file($_FILES["edit_image"]["tmp_name"], $target_file)) {
                 $update_sql = "UPDATE events SET title=?, date=?, location=?, image=? WHERE id=?";
                 $stmt = $conn->prepare($update_sql);

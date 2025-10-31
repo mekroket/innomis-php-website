@@ -20,27 +20,40 @@ if ($conn->connect_error) {
 
 // Fotoğraf silme işlemi
 if (isset($_GET['delete_image_id'])) {
-    $delete_image_id = $_GET['delete_image_id'];
+    $delete_image_id = intval($_GET['delete_image_id']);
     $delete_sql = "SELECT image_name FROM gallery WHERE id = ?";
     $stmt = $conn->prepare($delete_sql);
     $stmt->bind_param("i", $delete_image_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $image = $result->fetch_assoc();
-    $image_path = "assets/img/gallery/" . $image['image_name'];
-
-    // Fotoğrafı sil
-    if (unlink($image_path)) {
-        $delete_sql = "DELETE FROM gallery WHERE id = ?";
-        $stmt = $conn->prepare($delete_sql);
-        $stmt->bind_param("i", $delete_image_id);
-        if ($stmt->execute()) {
-            echo "Fotoğraf başarıyla silindi.";
+    
+    if ($image) {
+        // Güvenlik kontrolü: Sadece dosya adını al, path traversal'ı önle
+        $safe_filename = basename($image['image_name']);
+        $image_path = "assets/img/gallery/" . $safe_filename;
+        
+        // Dosyanın hedef dizinde olduğunu doğrula
+        $real_path = realpath($image_path);
+        $base_path = realpath("assets/img/gallery/");
+        
+        if ($real_path && $base_path && strpos($real_path, $base_path) === 0) {
+            // Fotoğrafı sil
+            if (unlink($image_path)) {
+                $delete_sql = "DELETE FROM gallery WHERE id = ?";
+                $stmt = $conn->prepare($delete_sql);
+                $stmt->bind_param("i", $delete_image_id);
+                if ($stmt->execute()) {
+                    echo "Fotoğraf başarıyla silindi.";
+                } else {
+                    echo "Fotoğraf silinemedi.";
+                }
+            } else {
+                echo "Dosya silinemedi.";
+            }
         } else {
-            echo "Fotoğraf silinemedi.";
+            echo "Geçersiz dosya yolu.";
         }
-    } else {
-        echo "Dosya silinemedi.";
     }
     $stmt->close();
 }
@@ -60,12 +73,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['image'])) {
         mkdir($target_dir, 0777, true);
     }
 
-    $target_file = $target_dir . basename($image_name);
+    // Dosya uzantısını kontrol et
+    $file_extension = strtolower(pathinfo($image_name, PATHINFO_EXTENSION));
+    $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
     $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-    if (in_array($_FILES['image']['type'], $allowed_types)) {
+    
+    if (in_array($file_extension, $allowed_extensions) && in_array($_FILES['image']['type'], $allowed_types)) {
+        // Güvenli dosya adı oluştur
+        $safe_filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($image_name));
+        $target_file = $target_dir . $safe_filename;
+        
         if (move_uploaded_file($image_tmp, $target_file)) {
             $stmt = $conn->prepare("INSERT INTO gallery (image_name, category) VALUES (?, ?)");
-            $stmt->bind_param("ss", $image_name, $category);
+            $stmt->bind_param("ss", $safe_filename, $category);
 
             if ($stmt->execute()) {
                 echo "Fotoğraf başarıyla eklendi.";
@@ -360,13 +380,13 @@ $conn->close();
                     <?php if ($gallery_result->num_rows > 0): ?>
                         <?php while ($row = $gallery_result->fetch_assoc()): ?>
                             <div class="gallery-item">
-                                <img src="assets/img/gallery/<?php echo $row['image_name']; ?>" 
+                                <img src="assets/img/gallery/<?php echo htmlspecialchars($row['image_name'], ENT_QUOTES, 'UTF-8'); ?>" 
                                      class="gallery-image" alt="Fotoğraf">
                                 <div class="gallery-info">
                                     <div class="gallery-category">
-                                        <i class="fas fa-folder me-2"></i><?php echo $row['category']; ?>
+                                        <i class="fas fa-folder me-2"></i><?php echo htmlspecialchars($row['category'], ENT_QUOTES, 'UTF-8'); ?>
                                     </div>
-                                    <a href="?delete_image_id=<?php echo $row['id']; ?>" 
+                                    <a href="?delete_image_id=<?php echo intval($row['id']); ?>" 
                                        class="btn-delete"
                                        onclick="return confirm('Bu fotoğrafı silmek istediğinize emin misiniz?')">
                                         <i class="fas fa-trash me-2"></i>Sil

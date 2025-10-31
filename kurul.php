@@ -58,7 +58,7 @@ if (isset($_POST['add_member'])) {
 // Üye silme işlemi
 if (isset($_POST['delete_member'])) {
     try {
-        $id = $_POST['member_id'];
+        $id = intval($_POST['member_id']);
         
         // Önce mevcut resmi al
         $sql = "SELECT image FROM team_members WHERE id = ?";
@@ -75,8 +75,16 @@ if (isset($_POST['delete_member'])) {
         
         if ($stmt->execute()) {
             // Varsayılan resim değilse dosyayı sil
-            if ($member['image'] != "assets/img/team/default.jpg" && file_exists($member['image'])) {
-                unlink($member['image']);
+            if ($member['image'] != "assets/img/team/default.jpg" && !empty($member['image'])) {
+                // Güvenlik kontrolü: Path traversal'ı önle
+                $safe_image_path = basename($member['image']);
+                $full_path = "assets/img/team/" . $safe_image_path;
+                $real_path = realpath($full_path);
+                $base_path = realpath("assets/img/team/");
+                
+                if ($real_path && $base_path && strpos($real_path, $base_path) === 0 && file_exists($full_path)) {
+                    unlink($full_path);
+                }
             }
             $success_message = "Üye başarıyla silindi!";
         } else {
@@ -90,7 +98,7 @@ if (isset($_POST['delete_member'])) {
 // Üye güncelleme işlemi
 if (isset($_POST['update_member'])) {
     try {
-        $id = $_POST['member_id'];
+        $id = intval($_POST['member_id']);
         $name = $_POST['edit_name'];
         $position = $_POST['edit_position'];
         $student_number = $_POST['edit_student_number'];
@@ -118,8 +126,16 @@ if (isset($_POST['update_member'])) {
                     $result = $stmt->get_result();
                     $member = $result->fetch_assoc();
                     
-                    if (!empty($member['image']) && file_exists($member['image'])) {
-                        unlink($member['image']);
+                    if (!empty($member['image'])) {
+                        // Güvenlik kontrolü: Path traversal'ı önle
+                        $safe_image_path = basename($member['image']);
+                        $full_path = "assets/img/team/" . $safe_image_path;
+                        $real_path = realpath($full_path);
+                        $base_path = realpath("assets/img/team/");
+                        
+                        if ($real_path && $base_path && strpos($real_path, $base_path) === 0 && file_exists($full_path)) {
+                            unlink($full_path);
+                        }
                     }
                     
                     // Yeni resimle güncelle

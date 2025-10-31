@@ -356,14 +356,14 @@
               <div class="col-md-4 col-sm-6 mb-4">
                 <div class="card event-card">
                   <div class="event-header position-relative">
-                    <img src="<?php echo $row['image']; ?>" alt="Etkinlik Resmi">
-                    <div class="event-logo"><?php echo $row['title']; ?></div>
+                    <img src="<?php echo htmlspecialchars($row['image'], ENT_QUOTES, 'UTF-8'); ?>" alt="Etkinlik Resmi">
+                    <div class="event-logo"><?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?></div>
                   </div>
                   <div class="event-body">
-                    <div class="event-title"><?php echo $row['title']; ?></div>
+                    <div class="event-title"><?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?></div>
                     <div class="event-footer">
                       <p><i class="bi bi-calendar-event"></i> <?php echo date('d F Y H:i', strtotime($row['date'])); ?></p>
-                      <p><i class="bi bi-geo-alt text-danger"></i> <?php echo $row['location']; ?></p>
+                      <p><i class="bi bi-geo-alt text-danger"></i> <?php echo htmlspecialchars($row['location'], ENT_QUOTES, 'UTF-8'); ?></p>
                     </div>
                   </div>
                 </div>
@@ -381,14 +381,14 @@
               <div class="col-md-4 col-sm-6 mb-4 past-event-card <?php echo ($index >= 3) ? 'hidden-event' : ''; ?>">
                 <div class="card event-card">
                   <div class="event-header position-relative">
-                    <img src="<?php echo $row['image']; ?>" alt="Etkinlik Resmi">
-                    <div class="event-logo"><?php echo $row['title']; ?></div>
+                    <img src="<?php echo htmlspecialchars($row['image'], ENT_QUOTES, 'UTF-8'); ?>" alt="Etkinlik Resmi">
+                    <div class="event-logo"><?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?></div>
                   </div>
                   <div class="event-body">
-                    <div class="event-title"><?php echo $row['title']; ?></div>
+                    <div class="event-title"><?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?></div>
                     <div class="event-footer">
                       <p><i class="bi bi-calendar-event"></i> <?php echo date('d F Y H:i', strtotime($row['date'])); ?></p>
-                      <p><i class="bi bi-geo-alt text-danger"></i> <?php echo $row['location']; ?></p>
+                      <p><i class="bi bi-geo-alt text-danger"></i> <?php echo htmlspecialchars($row['location'], ENT_QUOTES, 'UTF-8'); ?></p>
                     </div>
                   </div>
                 </div>

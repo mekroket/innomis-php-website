@@ -170,22 +170,37 @@ $result = $conn->query($sql);
 
     // Check if form is submitted
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $fullName = $_POST['fullName'];
-        $faculty = $_POST['faculty'];
-        $class = $_POST['class'];
-        $studentNumber = $_POST['studentNumber'];
-        $department = $_POST['department'];
-        $address = $_POST['address'];
-        $contactNumber = $_POST['contactNumber'];
-        $email = $_POST['email'];
-
-        $sql = "INSERT INTO registrations (fullName, faculty, class, studentNumber, department, address, contactNumber, email)
-            VALUES ('$fullName', '$faculty', '$class', '$studentNumber', '$department', '$address', '$contactNumber', '$email')";
-
-        if ($conn->query($sql) === TRUE) {
-            $successMessage = "Kayıt başarılı!"; // Set success message if registration is successful
+        // Input validation
+        $fullName = trim($_POST['fullName']);
+        $faculty = trim($_POST['faculty']);
+        $class = trim($_POST['class']);
+        $studentNumber = trim($_POST['studentNumber']);
+        $department = trim($_POST['department']);
+        $address = trim($_POST['address']);
+        $contactNumber = trim($_POST['contactNumber']);
+        $email = trim($_POST['email']);
+        
+        // Validate required fields
+        if (empty($fullName) || empty($faculty) || empty($class) || empty($studentNumber) || 
+            empty($department) || empty($address) || empty($contactNumber) || empty($email)) {
+            echo "Error: Tüm alanları doldurunuz.";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo "Error: Geçersiz e-posta adresi.";
+        } elseif (strlen($fullName) > 100 || strlen($faculty) > 100 || strlen($department) > 100) {
+            echo "Error: Bazı alanlar çok uzun.";
         } else {
-            echo "Error: " . $sql . "<br>" . $conn->error;
+            $sql = "INSERT INTO registrations (fullName, faculty, class, studentNumber, department, address, contactNumber, email)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssssssss", $fullName, $faculty, $class, $studentNumber, $department, $address, $contactNumber, $email);
+
+            if ($stmt->execute()) {
+                $successMessage = "Kayıt başarılı!"; // Set success message if registration is successful
+            } else {
+                echo "Error: " . $stmt->error;
+            }
+            $stmt->close();
         }
     }
 
